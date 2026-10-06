@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Wallet Watch · Polymarket</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/"
+        ><span class="brandmark">W</span
+        ><span>Wallet Watch<small>POLYMARKET RESEARCH</small></span></a
+      >
+      <div class="topright">
+        <span id="mode-label" class="badge">Публичные данные</span
+        ><button id="mode" class="secondary">Открыть демо</button>
+      </div>
+    </header>
+    <main>
+      <div class="intro">
+        <div>
+          <div class="eyebrow">НАБЛЮДАЙТЕ. СРАВНИВАЙТЕ. ПРОВЕРЯЙТЕ.</div>
+          <h1>Что стоит за прибылью?</h1>
+          <p>Публичные кошельки, их позиции и результаты — в одном месте.</p>
+        </div>
+        <button id="refresh" class="primary">↻ Обновить данные</button>
+      </div>
+      <div id="demo-banner" class="notice demo" hidden>
+        ДЕМОНСТРАЦИЯ · Все кошельки, сделки и результаты на этом экране
+        вымышлены.
+      </div>
+      <div id="error" class="notice error" role="alert" hidden></div>
+      <div class="toolbar">
+        <label
+          >Период рейтинга<select id="period">
+            <option value="day">День</option>
+            <option value="week">Неделя</option>
+            <option value="month" selected>Месяц</option>
+            <option value="all">Всё время</option>
+          </select></label
+        >
+        <label
+          >Категория<select id="category">
+            <option value="overall">Все рынки</option>
+            <option value="politics">Политика</option>
+            <option value="sports">Спорт</option>
+            <option value="crypto">Крипто</option>
+            <option value="economics">Экономика</option>
+            <option value="tech">Технологии</option>
+            <option value="finance">Финансы</option>
+          </select></label
+        >
+        <form id="address-form">
+          <label for="address">Открыть кошелёк</label>
+          <div class="input-group">
+            <input
+              id="address"
+              placeholder="0x… адрес кошелька Polymarket"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="42"
+            /><button type="submit" class="secondary">Найти →</button>
+          </div>
+        </form>
+      </div>
+      <div class="workspace">
+        <section class="panel directory">
+          <div class="panelhead">
+            <div class="tabs">
+              <button id="discover" class="tab active">Обзор</button
+              ><button id="saved" class="tab">
+                Наблюдаю <span id="saved-count">0</span>
+              </button>
+            </div>
+            <span id="row-count" class="muted">—</span>
+          </div>
+          <div class="filters">
+            <input
+              id="search"
+              aria-label="Поиск кошелька"
+              placeholder="Имя или адрес"
+            /><label class="check"
+              ><input type="checkbox" id="positive" checked /> Только с
+              прибылью</label
+            >
+          </div>
+          <p id="board-scope" class="scope"></p>
+          <div id="wallets" class="wallet-list" aria-live="polite"></div>
+          <p class="panelnote">
+            Выберите кошелёк, чтобы проверить историю и текущие позиции.
+          </p>
+        </section>
+        <section class="panel detail" aria-live="polite">
+          <div id="detail">
+            <div class="empty">
+              <div class="empty-icon">◎</div>
+              <h2>Начните с кошелька</h2>
+              <p>Выберите участника рейтинга или введите публичный адрес.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+      <footer>
+        <span>Источник: Polymarket Data API v2 · Только чтение</span
+        ><span>Прошлые результаты не гарантируют будущую прибыль.</span>
+      </footer>
+    </main>
+  </body>
+</html>
