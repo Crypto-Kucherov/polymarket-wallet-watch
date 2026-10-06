@@ -1,0 +1,10 @@
+{
+  "name": "polymarket-wallet-watch",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local dashboard for public Polymarket wallet research",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node src/server.js", "test": "node --test" },
+  "license": "MIT"
+}
