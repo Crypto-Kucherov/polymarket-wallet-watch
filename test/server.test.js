@@ -71,3 +71,11 @@ test("private paths are not served and errors do not expose upstream internals",
   assert.equal((await response.text()).includes("secret upstream"), false);
   assert.equal((await fetch(url + "/api/wallet?wallet=invalid")).status, 400);
 });
+test("serves the comparison module as JavaScript without exposing source directories", async (t) => {
+  const { url } = await setup(t);
+  const response = await fetch(url + "/position-changes.js");
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type"), /text\/javascript/);
+  assert.match(await response.text(), /export function createPositionTracker/);
+  assert.equal((await fetch(url + "/src/service.js")).status, 404);
+});

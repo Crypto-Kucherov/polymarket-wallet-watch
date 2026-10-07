@@ -1,3 +1,6 @@
+import { createPositionTracker } from "./position-changes.js";
+
+const tracker = createPositionTracker();
 const $ = (id) => document.getElementById(id);
 const escape = (value) =>
   String(value ?? "").replace(
@@ -38,6 +41,7 @@ const state = {
   rows: [],
   wallet: null,
   report: null,
+  comparison: null,
   tab: "positions",
   boardSequence: 0,
   walletSequence: 0,
@@ -226,9 +230,87 @@ function chart(points) {
     "</span></div>"
   );
 }
+function renderPositionChanges() {
+  const comparison = state.comparison;
+  if (!comparison)
+    return '<p class="scope">Сначала загрузите полный срез позиций.</p>';
+  const date = (value) => escape(new Date(value).toLocaleString("ru"));
+  const cachedNote = comparison.cached
+    ? '<p class="scope">API вернул тот же срез. Нового сравнения пока нет.</p>'
+    : "";
+  if (comparison.status === "baseline") {
+    return (
+      '<div class="change-note">Первый полный срез сохранён в этой вкладке: ' +
+      date(comparison.toAt) +
+      ". Изменения появятся после следующей загрузки свежих данных.</div>" +
+      cachedNote
+    );
+  }
+  const blocked = {
+    incomplete:
+      "Данные загружены не полностью. Сравнение пропущено; предыдущий полный срез сохранён.",
+    invalid:
+      "Не удалось однозначно определить позиции или их объём. Сравнение пропущено; предыдущий срез сохранён.",
+    stale:
+      "Этот срез старше уже полученного. Сравнение пропущено; предыдущий срез сохранён.",
+  };
+  if (blocked[comparison.status]) {
+    return (
+      '<div class="change-note incomplete">' +
+      blocked[comparison.status] +
+      (comparison.fromAt
+        ? " Последний полный срез: " + date(comparison.fromAt) + "."
+        : "") +
+      "</div>"
+    );
+  }
+  const names = {
+    appeared: "Появилась в списке",
+    disappeared: "Исчезла из списка",
+    increased: "Объём вырос",
+    decreased: "Объём снизился",
+  };
+  const shares = (value) =>
+    new Intl.NumberFormat("ru", { maximumFractionDigits: 6 }).format(value);
+  const rows = comparison.changes
+    .map((row) => {
+      const before =
+        row.before === null
+          ? "не было в выборке"
+          : shares(row.before) + " долей";
+      const after =
+        row.after === null ? "нет в выборке" : shares(row.after) + " долей";
+      return (
+        '<div class="position position-change"><div><div class="position-title">' +
+        escape(row.title) +
+        '</div><div class="position-meta">' +
+        escape(row.outcome) +
+        '</div><div class="change-amount">' +
+        escape(before) +
+        " → " +
+        escape(after) +
+        '</div></div><span class="change-kind">' +
+        names[row.kind] +
+        "</span></div>"
+      );
+    })
+    .join("");
+  return (
+    '<p class="scope change-period">Сравнение: ' +
+    date(comparison.fromAt) +
+    " → " +
+    date(comparison.toAt) +
+    "</p>" +
+    cachedNote +
+    (rows ||
+      '<div class="change-note">Изменений в составе и объёмах позиций не обнаружено.</div>') +
+    '<p class="storage-note">Это изменения между двумя срезами, а не подтверждённые покупки или продажи. Для конкретных операций смотрите активность.</p>'
+  );
+}
 function renderEntries() {
   const r = state.report;
   if (!r) return "";
+  if (state.tab === "changes") return renderPositionChanges();
   const rows = state.tab === "positions" ? r.open : r.activity;
   if (!rows.length)
     return '<p class="scope">Нет загруженных записей. Полнота данных указана выше.</p>';
@@ -362,7 +444,11 @@ function renderDetail() {
     o.count +
     ')</button><button class="subtab ' +
     (state.tab === "activity" ? "active" : "") +
-    '" id="activity-tab">Последняя активность</button></div>' +
+    '" id="activity-tab">Последняя активность</button><button class="subtab ' +
+    (state.tab === "changes" ? "active" : "") +
+    '" id="changes-tab">Изменения (' +
+    (state.comparison?.changes.length ?? 0) +
+    ")</button></div>" +
     '<div id="entries">' +
     renderEntries() +
     "</div>" +
@@ -371,6 +457,7 @@ function renderDetail() {
     ">Обновлять выбранный кошелёк раз в минуту</label><small>Срез: " +
     escape(new Date(r.fetchedAt).toLocaleTimeString("ru")) +
     "</small></div>" +
+    '<p class="storage-note">Срезы сравнения хранятся только в памяти этой вкладки. Перезагрузка страницы сбрасывает сравнение, но сохраняет список наблюдения.</p>' +
     '<p class="storage-note">Закрытые позиции: до 500 последних, без ограничения по периоду. Доля прибыльных считается среди записей с известным ненулевым результатом; это не доля выигранных сделок.</p>';
   $("watch").onclick = saveCurrent;
   $("auto").onchange = () => {
@@ -382,6 +469,10 @@ function renderDetail() {
   };
   $("activity-tab").onclick = () => {
     state.tab = "activity";
+    renderDetail();
+  };
+  $("changes-tab").onclick = () => {
+    state.tab = "changes";
     renderDetail();
   };
 }
@@ -397,6 +488,7 @@ async function loadWallet(wallet, quiet = false) {
   try {
     const report = await api("wallet", { wallet });
     if (sequence !== state.walletSequence) return;
+    state.comparison = tracker.observe(report);
     state.report = report;
     renderDetail();
   } catch (error) {
